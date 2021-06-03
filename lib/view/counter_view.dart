@@ -3,6 +3,7 @@ import 'package:hive/hive.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 
 import '../utils/box_manager.dart';
+import '../utils/hive_manager.dart';
 
 class CounterView extends StatefulWidget {
   const CounterView({Key? key}) : super(key: key);
@@ -12,53 +13,22 @@ class CounterView extends StatefulWidget {
 }
 
 class _CounterViewState extends State<CounterView> {
-  /// [3] Öncesinde açtığımız kutuyu çağırmak için oluşturduğumuz değişken
-  late Box<int> _boxCounter;
-
-  /// [4] Değişimini izleyeceğimiz sayaç değişkeni
-  int _counter = 0;
+  /// HiveManager'a erişmek için değişken.
+  late HiveManager _hiveManager;
 
   @override
   void initState() {
     super.initState();
 
-    /// [5] Açılan Kutuyu [ÇAĞIR]
-    _boxCounter = Hive.box<int>(BoxManager.instance.boxNameCounter);
+    /// HiveManager'dan nesne oluşturarak değişene atadık.
+    _hiveManager = HiveManager();
   }
 
   @override
   void dispose() {
-    /// [6] İşi biten Kutuyu [KAPAT]
-    /// 1. Alternatif:
-    /// Sadece [_boxCounter] isimli kutuyu kapatır
-    _boxCounter.close();
-
-    /// 2. Alternatif:
-    /// Tüm Kutuluarı kapatır
-    /// Hive.close();
+    /// İşi bitince
+    _hiveManager.close();
     super.dispose();
-  }
-
-  /// [7] Metotları Oluştur
-  /// [7-A] Arttırma Metodu
-  void incrementCounter() {
-    /// Write Box - Kutuya [YAZ/KAYDET]
-    /// Counter değerini bir arttır.
-    _boxCounter.put(BoxManager.instance.keyNameCounter, (_counter++) + 1);
-  }
-
-  /// [7-B] Sıfırlama Metodu
-  void resetCounter() {
-    /// Write Box - Kutuya [YAZ/KAYDET]
-    /// Counter değerini sıfıra eşitle.
-    _boxCounter.put(BoxManager.instance.keyNameCounter, _counter = 0);
-  }
-
-  /// [7-C] Azaltma Metodu
-  void decrementCounter() {
-    /// Write Box - Kutuya [YAZ/KAYDET]
-    /// Counter değerini bir azalt.
-    _boxCounter.put(BoxManager.instance.keyNameCounter, (_counter--) - 1);
   }
 
   @override
@@ -66,7 +36,7 @@ class _CounterViewState extends State<CounterView> {
     return Scaffold(
       appBar: AppBar(
         title: Text(
-          'Counter App Hive DB',
+          'Counter App Hive DB - Alternative',
         ),
       ),
       body: Center(
@@ -78,19 +48,22 @@ class _CounterViewState extends State<CounterView> {
               style: Theme.of(context).textTheme.headline3,
             ),
 
-            /// [8] Kutuyu [DİNLE]
+            ///Kutuyu [DİNLE]
             ValueListenableBuilder<Box<int>>(
-              /// [8-A] [valueListenable] parametresine
+              /// [A] [valueListenable] parametresine
               /// Açtığımız/Çağırdığımız kutuyu dinlemesini istedik.
-              valueListenable: _boxCounter.listenable(),
+              valueListenable: _hiveManager.boxCounter.listenable(),
               builder: (context, box, widget) {
                 /// Read Box - Kutudan [OKU/GETİR]
-                /// [8-B] Dinlediğimiz kutudaki değişkenin değerine eriştik.
+                /// [B] Dinlediğimiz kutudaki değişkenin değerine eriştik.
                 /// [defaultValue] Varsayılan değeri 0 atadık.
                 /// Yani başlarken kutuda değer olmayacağı için 0 gelsin.
                 var readCounter = box.get(BoxManager.instance.keyNameCounter, defaultValue: 0);
+
+                /// 2. alternatif: Nesne üzerinden dinlenen değişkene erişme
+                /// var readCounter = _hiveManager.counter;
                 return Text(
-                  /// [8-C] Ekrana yazdıralım
+                  /// [C] Ekrana yazdıralım
                   '$readCounter',
                   style: Theme.of(context).textTheme.headline3,
                 );
@@ -107,10 +80,10 @@ class _CounterViewState extends State<CounterView> {
               bottom: 10,
             ),
 
-            /// [9]: Arttır FAB Düğmesi
+            /// Arttır FAB Düğmesi
             child: FloatingActionButton(
               heroTag: 'incrementTag',
-              onPressed: incrementCounter,
+              onPressed: _hiveManager.incrementCounter,
               tooltip: 'Arttır',
               child: Icon(
                 Icons.add,
@@ -122,26 +95,27 @@ class _CounterViewState extends State<CounterView> {
               bottom: 10,
             ),
 
-            /// [10]: Sıfırla FAB Düğmesi
+            /// Sıfırla FAB Düğmesi
             child: FloatingActionButton(
-              backgroundColor: Colors.amberAccent,
+              backgroundColor: Colors.white,
               heroTag: 'resetTag',
-              onPressed: resetCounter,
+              onPressed: _hiveManager.resetCounter,
               tooltip: 'Sıfırla',
               child: Icon(
                 Icons.exposure_zero_sharp,
+                color: Colors.blue,
               ),
             ),
           ),
 
-          /// [11]: Azalt FAB Düğmesi
+          /// Azalt FAB Düğmesi
           Padding(
             padding: EdgeInsets.only(
               bottom: 10,
             ),
             child: FloatingActionButton(
               heroTag: 'decrementTag',
-              onPressed: decrementCounter,
+              onPressed: _hiveManager.decrementCounter,
               tooltip: 'Azalt',
               child: Icon(
                 Icons.remove,
